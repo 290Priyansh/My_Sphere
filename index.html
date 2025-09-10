@@ -1,0 +1,687 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=1000, initial-scale=1.0">
+<title>SimuSphere</title>
+<style>
+body {
+margin: 0;
+padding: 20px;
+background: linear-gradient(135deg, #0c0c0c, #1a1a1a, #2a2a2a);
+color: white;
+font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+display: flex;
+flex-direction: column;
+align-items: center;
+min-height: 100vh;
+}
+#canvas {
+border: 3px solid #444;
+background-color: #000;
+margin: 20px 0;
+border-radius: 12px;
+box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6);
+}
+.controls {
+display: flex;
+gap: 15px;
+flex-wrap: wrap;
+justify-content: center;
+align-items: center;
+margin-bottom: 20px;
+padding: 20px;
+background: rgba(255, 255, 255, 0.05);
+border-radius: 16px;
+backdrop-filter: blur(10px);
+border: 1px solid rgba(255, 255, 255, 0.1);
+}
+.control-group {
+display: flex;
+flex-direction: column;
+align-items: center;
+margin: 0 10px;
+}
+.control-group label {
+font-size: 12px;
+margin-bottom: 8px;
+color: #ccc;
+font-weight: 500;
+}
+button {
+background: linear-gradient(145deg, #2a2a2a, #1a1a1a);
+border: 2px solid #444;
+color: white;
+padding: 12px 24px;
+border-radius: 12px;
+cursor: pointer;
+transition: all 0.3s ease;
+box-shadow: 0 4px 16px rgba(0,0,0,0.3);
+font-weight: 600;
+text-transform: uppercase;
+font-size: 11px;
+letter-spacing: 0.5px;
+}
+button:hover {
+background: linear-gradient(145deg, #3a3a3a, #2a2a2a);
+box-shadow: 0 6px 24px rgba(0,0,0,0.4);
+transform: translateY(-2px);
+border-color: #666;
+}
+button:active {
+transform: translateY(0);
+box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+}
+button:disabled {
+opacity: 0.5;
+cursor: not-allowed;
+transform: none;
+}
+input[type="file"] {
+background: rgba(42, 42, 42, 0.8);
+border: 2px solid #444;
+color: white;
+padding: 10px;
+border-radius: 8px;
+font-size: 12px;
+cursor: pointer;
+}
+.stats {
+background: rgba(0,0,0,0.8);
+padding: 15px 25px;
+border-radius: 12px;
+font-family: 'Courier New', monospace;
+font-size: 14px;
+margin: 15px 0;
+min-width: 350px;
+text-align: center;
+border: 1px solid rgba(255, 255, 255, 0.1);
+backdrop-filter: blur(10px);
+}
+.title {
+font-size: 32px;
+font-weight: 700;
+background: linear-gradient(45deg, #ff6b6b, #4ecdc4, #45b7d1, #96ceb4);
+-webkit-background-clip: text;
+-webkit-text-fill-color: transparent;
+background-clip: text;
+margin-bottom: 5px;
+text-shadow: 0 0 30px rgba(255, 255, 255, 0.1);
+}
+.subtitle {
+font-size: 14px;
+color: #888;
+margin-bottom: 20px;
+font-style: italic;
+}
+.progress-bar {
+width: 350px;
+height: 24px;
+background: rgba(51, 51, 51, 0.8);
+border-radius: 12px;
+overflow: hidden;
+margin: 15px 0;
+border: 1px solid rgba(255, 255, 255, 0.1);
+}
+.progress-fill {
+height: 100%;
+background: linear-gradient(90deg, #4ecdc4, #45b7d1, #96ceb4);
+width: 0%;
+transition: width 0.3s ease;
+box-shadow: 0 0 10px rgba(78, 205, 196, 0.5);
+}
+.color-palette {
+display: flex;
+gap: 8px;
+margin: 10px 0;
+justify-content: center;
+flex-wrap: wrap;
+}
+.color-swatch {
+width: 30px;
+height: 30px;
+border-radius: 50%;
+border: 2px solid rgba(255, 255, 255, 0.3);
+box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+.info-panel {
+background: rgba(0, 0, 0, 0.6);
+padding: 15px;
+border-radius: 12px;
+margin: 10px 0;
+border: 1px solid rgba(255, 255, 255, 0.1);
+backdrop-filter: blur(10px);
+text-align: center;
+}
+.radius-info {
+background: rgba(78, 205, 196, 0.1);
+border: 1px solid rgba(78, 205, 196, 0.3);
+padding: 10px 15px;
+border-radius: 8px;
+margin: 10px 0;
+font-size: 12px;
+color: #4ecdc4;
+}
+.phase-indicator {
+background: rgba(255, 195, 113, 0.2);
+border: 1px solid rgba(255, 195, 113, 0.4);
+padding: 10px 15px;
+border-radius: 8px;
+margin: 10px 0;
+font-size: 13px;
+color: #ffc371;
+font-weight: 600;
+}
+</style>
+</head>
+<body>
+<h1 class="title">SimuSphere</h1>
+<p>This project recreates your image with spheres in a physics-based simulation.</p>
+
+<p class="subtitle">Made by Priyansh Vaish</p>
+<div class="controls">
+  <div class="control-group">
+    <label>Image Input</label>
+    <input type="file" id="imageInput" accept="image/*">
+  </div>
+  <button id="startBtn">Start Simulation</button>
+  <button id="resetBtn">Reset</button>
+  <button id="exportBtn" disabled>Export Image</button>
+</div>
+<div class="info-panel">
+<div class="phase-indicator" id="phaseIndicator">Ready to start</div>
+<div class="radius-info">
+Ball Radius: Random between 5-28 pixels
+</div>
+<div class="stats" id="stats">
+Step: 0/999 | Objects: 0/900 | FPS: 60 
+</div>
+<div class="progress-bar">
+<div class="progress-fill" id="progressFill"></div>
+</div>
+<div class="color-palette" id="colorPalette"></div>
+</div>
+<canvas id="canvas" width="900" height="900"></canvas>
+<script>
+const WIDTH = 900;
+const HEIGHT = 900;
+const GRAVITY = { x: 0, y: 981 };
+const BOUNCE_LOSS = 0.9;
+const COLLISION_DAMPING = 0.95; 
+const MIN_RADIUS = 6;
+const MAX_RADIUS = 24;
+const SPAWN_STEP_INTERVAL = 1;
+const FIXED_DT = 1/60.0;
+const TOTAL_STEPS = 1000;
+const SIMULATION_SUBSTEPS = 8;
+const MAX_OBJECTS = 1000;
+const CELL_SIZE = MAX_RADIUS * 2;
+const GRID_WIDTH = Math.ceil(WIDTH / CELL_SIZE);
+const GRID_HEIGHT = Math.ceil(HEIGHT / CELL_SIZE);
+// Set random seed for deterministic behavior
+let randomSeed = 42;
+function seededRandom() {
+    const x = Math.sin(randomSeed++) * 10000;
+    return x - Math.floor(x);
+}
+class Vector2 { 
+    constructor(x = 0, y = 0) { this.x = x; this.y = y;} 
+    add(o){return new Vector2(this.x+o.x,this.y+o.y);} 
+    subtract(o){return new Vector2(this.x-o.x,this.y-o.y);} 
+    multiply(s){return new Vector2(this.x*s,this.y*s);} 
+    divide(s){return new Vector2(this.x/s,this.y/s);} 
+    lengthSquared(){return this.x*this.x+this.y*this.y;} 
+    length(){return Math.sqrt(this.lengthSquared());} 
+    normalize(){const len=this.length();if(len===0)return new Vector2(0,0);return this.divide(len);} 
+    copy(){return new Vector2(this.x,this.y);} 
+}
+class Ball {
+    constructor(position, radius, stepAdded, color = null) {
+        this.position = new Vector2(position.x, position.y);
+        this.oldPosition = new Vector2(position.x, position.y);
+        this.acceleration = new Vector2(0, 0);
+        this.radius = radius;
+        this.mass = Math.PI * radius * radius;
+        this.stepAdded = stepAdded;
+        this.color = color || `rgb(${Math.floor(100 + seededRandom() * 155)}, ${Math.floor(100 + seededRandom() * 155)}, ${Math.floor(100 + seededRandom() * 155)})`;
+    }
+    update(dt) {
+        const velocity = this.position.subtract(this.oldPosition);
+        this.oldPosition = this.position.copy();
+        this.position = this.position.add(velocity).add(this.acceleration.multiply(dt * dt));
+        this.acceleration = new Vector2(0, 0);
+    }
+    accelerate(force) {
+        if (this.mass > 0) {
+            this.acceleration = this.acceleration.add(new Vector2(GRAVITY.x, GRAVITY.y));
+        }
+    }
+    applyConstraints() {
+        if (this.position.x - this.radius < 0) { 
+            this.position.x = this.radius; 
+        } else if (this.position.x + this.radius > WIDTH) { 
+            this.position.x = WIDTH - this.radius; 
+        }
+        if (this.position.y - this.radius < 0) { 
+            this.position.y = this.radius; 
+        } else if (this.position.y + this.radius > HEIGHT) { 
+            this.position.y = HEIGHT - this.radius; 
+        }
+    }
+    draw(ctx) {
+        const gradient = ctx.createRadialGradient(
+            this.position.x - this.radius/3,
+            this.position.y - this.radius/3,
+            0,
+            this.position.x,
+            this.position.y,
+            this.radius
+        );
+        gradient.addColorStop(0, this.color);
+        gradient.addColorStop(1, this.adjustBrightness(this.color, -30));
+        ctx.fillStyle = gradient;
+        ctx.beginPath();
+        ctx.arc(this.position.x, this.position.y, this.radius, 0, 2 * Math.PI);
+        ctx.fill();
+        
+        ctx.fillStyle = this.adjustBrightness(this.color, 50);
+        ctx.beginPath();
+        ctx.arc(this.position.x - this.radius/4, this.position.y - this.radius/4, this.radius/6, 0, 2 * Math.PI);
+        ctx.fill();
+    }
+    adjustBrightness(color, amount) {
+        const match = color.match(/rgb\((\d+),\s*(\d+),\s*(\d+)\)/);
+        if (match) {
+            const r = Math.max(0, Math.min(255, parseInt(match[1]) + amount));
+            const g = Math.max(0, Math.min(255, parseInt(match[2]) + amount));
+            const b = Math.max(0, Math.min(255, parseInt(match[3]) + amount));
+            return `rgb(${r}, ${g}, ${b})`;
+        }
+        return color;
+    }
+}
+class Simulation {
+    constructor() {
+        this.canvas = document.getElementById('canvas');
+        this.ctx = this.canvas.getContext('2d');
+        this.balls = [];
+        this.currentStep = 0;
+        this.isRunning = false;
+        this.grid = new Map();
+        this.inputImage = null;
+        this.imageData = null;
+        this.ballSpawnData = [];
+        this.frameCount = 0;
+        this.lastTime = 0;
+        this.fps = 60;
+        this.phase = 'idle';
+        this.displayStep = 0;
+        this.ballsSpawned = 0;
+        
+        this.setupEventListeners();
+        this.draw();
+    }
+    setupEventListeners() {
+        const startBtn = document.getElementById('startBtn');
+        const resetBtn = document.getElementById('resetBtn');
+        const exportBtn = document.getElementById('exportBtn');
+        const imageInput = document.getElementById('imageInput');
+        
+        startBtn.addEventListener('click', () => this.start());
+        resetBtn.addEventListener('click', () => this.reset());
+        exportBtn.addEventListener('click', () => this.exportImage());
+        imageInput.addEventListener('change', (e) => this.loadImage(e));
+    }
+    loadImage(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+        
+        const img = new Image();
+        img.onload = () => {
+            const tempCanvas = document.createElement('canvas');
+            tempCanvas.width = WIDTH;
+            tempCanvas.height = HEIGHT;
+            const tempCtx = tempCanvas.getContext('2d');
+            tempCtx.drawImage(img, 0, 0, WIDTH, HEIGHT);
+            this.imageData = tempCtx.getImageData(0, 0, WIDTH, HEIGHT);
+            this.inputImage = img;
+            console.log('Image loaded successfully');
+        };
+        img.src = URL.createObjectURL(file);
+    }
+    getCellIndex(position) {
+        return {
+            x: Math.floor(position.x / CELL_SIZE),
+            y: Math.floor(position.y / CELL_SIZE)
+        };
+    }
+    updateGrid() {
+        this.grid.clear();
+        for (const ball of this.balls) {
+            const cell = this.getCellIndex(ball.position);
+            const key = `${cell.x},${cell.y}`;
+            if (!this.grid.has(key)) {
+                this.grid.set(key, []);
+            }
+            this.grid.get(key).push(ball);
+        }
+    }
+    getNearbyBalls(ball) {
+        const cell = this.getCellIndex(ball.position);
+        const nearbyBalls = [];
+        for (let dx = -1; dx <= 1; dx++) {
+            for (let dy = -1; dy <= 1; dy++) {
+                const key = `${cell.x + dx},${cell.y + dy}`;
+                if (this.grid.has(key)) {
+                    nearbyBalls.push(...this.grid.get(key));
+                }
+            }
+        }
+        return nearbyBalls;
+    }
+    solveCollisions() {
+        this.updateGrid();
+        for (const ball1 of this.balls) {
+            const nearbyBalls = this.getNearbyBalls(ball1);
+            for (const ball2 of nearbyBalls) {
+                if (ball1 === ball2) continue;
+                
+                const collisionAxis = ball1.position.subtract(ball2.position);
+                const distSq = collisionAxis.lengthSquared();
+                const minDist = ball1.radius + ball2.radius;
+                
+                if (distSq < minDist * minDist && distSq > 0) {
+                    const dist = Math.sqrt(distSq);
+                    const normal = collisionAxis.divide(dist);
+                    const overlap = (minDist - dist) * 0.5;
+                    const totalMass = ball1.mass + ball2.mass;
+                    const massRatio1 = totalMass === 0 ? 0.5 : ball2.mass / totalMass;
+                    const massRatio2 = totalMass === 0 ? 0.5 : ball1.mass / totalMass;
+                    const separationVector = normal.multiply(overlap);
+                    ball1.position = ball1.position.add(separationVector.multiply(massRatio1 * COLLISION_DAMPING));
+                    ball2.position = ball2.position.subtract(separationVector.multiply(massRatio2 * COLLISION_DAMPING));
+                }
+            }
+        }
+    }
+    update(dt) {
+        const subDt = dt / SIMULATION_SUBSTEPS;
+        for (let i = 0; i < SIMULATION_SUBSTEPS; i++) {
+            for (const ball of this.balls) {
+                ball.accelerate(GRAVITY);
+            }
+            this.solveCollisions();
+            for (const ball of this.balls) {
+                ball.applyConstraints();
+                ball.update(subDt);
+            }
+        }
+    }
+    addBall(ball) {
+        if (this.balls.length < MAX_OBJECTS) {
+            this.balls.push(ball);
+        } else if (this.balls.length > 0) {
+            this.balls.shift();
+            this.balls.push(ball);
+        }
+    }
+    calculatePositions() {
+        console.log("Starting calculation phase...");
+        this.phase = 'calculating';
+        this.updatePhaseIndicator('Calculating ball positions...');
+        
+        randomSeed = 42; // Reset seed for deterministic behavior
+        this.balls = [];
+        this.ballSpawnData = [];
+        this.currentStep = 0;
+        let ballsSpawned = 0;
+        
+        while (this.currentStep < TOTAL_STEPS) {
+            // Spawn balls at fixed intervals
+            if (this.currentStep % SPAWN_STEP_INTERVAL === 0 && ballsSpawned < MAX_OBJECTS) {
+                const centerPos = new Vector2(WIDTH/2, HEIGHT/2);
+                const radius = MIN_RADIUS + seededRandom() * (MAX_RADIUS - MIN_RADIUS);
+                const newBall = new Ball(centerPos, radius, this.currentStep);
+                
+                const angle = seededRandom() * 2 * Math.PI;
+                const blastSpeed = 40;
+                const velocity = new Vector2(
+                    Math.cos(angle) * blastSpeed,
+                    Math.sin(angle) * blastSpeed
+                );
+                newBall.oldPosition = newBall.position.subtract(velocity.multiply(FIXED_DT));
+                
+                // Store spawn data
+                this.ballSpawnData.push({
+                    step: this.currentStep,
+                    x: newBall.position.x,
+                    y: newBall.position.y,
+                    radius: newBall.radius,
+                    oldX: newBall.oldPosition.x,
+                    oldY: newBall.oldPosition.y,
+                    color: newBall.color
+                });
+                
+                this.addBall(newBall);
+                ballsSpawned++;
+            }
+            
+            // Update physics
+            this.update(FIXED_DT);
+            this.currentStep++;
+            
+            // Update progress every 50 steps
+            if (this.currentStep % 50 === 0) {
+                const progress = (this.currentStep / TOTAL_STEPS) * 100;
+                document.getElementById('progressFill').style.width = `${progress * 0.5}%`; // 50% for calculation
+                console.log(`Calculated ${this.currentStep}/${TOTAL_STEPS} steps...`);
+            }
+        }
+        
+        // Map final positions to image colors if image is loaded
+        if (this.imageData) {
+            console.log("Mapping colors from input image...");
+            this.mapBallsToImage();
+        }
+        
+        console.log("Calculation phase complete!");
+        this.updatePhaseIndicator('Calculation complete! Starting display...');
+    }
+    mapBallsToImage() {
+        if (!this.imageData) return;
+        
+        // Sort balls by stepAdded to maintain correspondence
+        const sortedBalls = [...this.balls].sort((a, b) => a.stepAdded - b.stepAdded);
+        
+        for (let i = 0; i < Math.min(sortedBalls.length, this.ballSpawnData.length); i++) {
+            const ball = sortedBalls[i];
+            const x = Math.max(0, Math.min(WIDTH - 1, Math.floor(ball.position.x)));
+            const y = Math.max(0, Math.min(HEIGHT - 1, Math.floor(ball.position.y)));
+            const index = (y * WIDTH + x) * 4;
+            const r = this.imageData.data[index];
+            const g = this.imageData.data[index + 1];
+            const b = this.imageData.data[index + 2];
+            const a = this.imageData.data[index + 3];
+            
+            if (a > 128) {
+                this.ballSpawnData[i].color = `rgb(${r}, ${g}, ${b})`;
+            }
+        }
+    }
+    displaySimulation() {
+        console.log("Starting display phase...");
+        this.phase = 'displaying';
+        this.updatePhaseIndicator('Displaying simulation...');
+        
+        this.balls = [];
+        this.displayStep = 0;
+        this.ballsSpawned = 0;
+        this.isRunning = true;
+        
+        this.displayLoop(performance.now());
+    }
+    displayLoop(currentTime) {
+        if (!this.isRunning) return;
+        
+        // Calculate FPS
+        if (currentTime - this.lastTime >= 1000) {
+            this.fps = this.frameCount;
+            this.frameCount = 0;
+            this.lastTime = currentTime;
+        }
+        this.frameCount++;
+        
+        // Spawn balls according to stored data
+        while (this.ballsSpawned < this.ballSpawnData.length && 
+               this.ballSpawnData[this.ballsSpawned].step === this.displayStep) {
+            const data = this.ballSpawnData[this.ballsSpawned];
+            const newBall = new Ball(
+                new Vector2(data.x, data.y),
+                data.radius,
+                data.step,
+                data.color
+            );
+            newBall.oldPosition = new Vector2(data.oldX, data.oldY);
+            
+            if (this.balls.length < MAX_OBJECTS) {
+                this.balls.push(newBall);
+            } else if (this.balls.length > 0) {
+                this.balls.shift();
+                this.balls.push(newBall);
+            }
+            
+            this.ballsSpawned++;
+        }
+        
+        // Update physics
+        this.update(FIXED_DT);
+        
+        // Draw
+        this.draw();
+        
+        // Update progress
+        const progress = 50 + (this.displayStep / TOTAL_STEPS) * 50; // 50-100% for display
+        document.getElementById('progressFill').style.width = `${progress}%`;
+        
+        this.displayStep++;
+        
+        if (this.displayStep < TOTAL_STEPS) {
+            requestAnimationFrame((time) => this.displayLoop(time));
+        } else {
+            this.stop();
+        }
+    }
+    draw() {
+        const gradient = this.ctx.createLinearGradient(0, 0, 0, HEIGHT);
+        gradient.addColorStop(0, '#000000');
+        gradient.addColorStop(1, '#111111');
+        this.ctx.fillStyle = gradient;
+        this.ctx.fillRect(0, 0, WIDTH, HEIGHT);
+        
+        for (const ball of this.balls) {
+            ball.draw(this.ctx);
+        }
+        
+        this.updateStats();
+    }
+    updateStats() {
+        const step = this.phase === 'displaying' ? this.displayStep : this.currentStep;
+        document.getElementById('stats').textContent = 
+            `Step: ${step}/${TOTAL_STEPS} | Objects: ${this.balls.length}/${MAX_OBJECTS} | FPS: ${Math.round(this.fps)} | Phase: ${this.phase}`;
+    }
+    updatePhaseIndicator(text) {
+        document.getElementById('phaseIndicator').textContent = text;
+    }
+    start() {
+        if (this.isRunning) return;
+        
+        document.getElementById('startBtn').disabled = true;
+        document.getElementById('exportBtn').disabled = true;
+        
+        // First calculate all positions
+        this.calculatePositions();
+        
+        // Then display the simulation
+        setTimeout(() => {
+            this.displaySimulation();
+        }, 100);
+    }
+    stop() {
+        this.isRunning = false;
+        this.phase = 'complete';
+        this.updatePhaseIndicator('Simulation complete!');
+        document.getElementById('startBtn').disabled = false;
+        document.getElementById('exportBtn').disabled = false;
+        console.log('Simulation completed with', this.balls.length, 'balls');
+    }
+    reset() {
+        this.isRunning = false;
+        this.phase = 'idle';
+        this.currentStep = 0;
+        this.displayStep = 0;
+        this.balls = [];
+        this.ballSpawnData = [];
+        this.ballsSpawned = 0;
+        this.frameCount = 0;
+        randomSeed = 42;
+        
+        document.getElementById('startBtn').disabled = false;
+        document.getElementById('exportBtn').disabled = true;
+        document.getElementById('progressFill').style.width = '0%';
+        this.updatePhaseIndicator('Ready to start');
+        
+        this.draw();
+    }
+    exportImage() {
+        const exportCanvas = document.createElement('canvas');
+        const exportCtx = exportCanvas.getContext('2d');
+        exportCanvas.width = WIDTH * 2;
+        exportCanvas.height = HEIGHT * 2;
+        exportCtx.scale(2, 2);
+        
+        const gradient = exportCtx.createLinearGradient(0, 0, 0, HEIGHT);
+        gradient.addColorStop(0, '#000000');
+        gradient.addColorStop(1, '#111111');
+        exportCtx.fillStyle = gradient;
+        exportCtx.fillRect(0, 0, WIDTH, HEIGHT);
+        
+        for (const ball of this.balls) {
+            const gradient = exportCtx.createRadialGradient(
+                ball.position.x - ball.radius/3,
+                ball.position.y - ball.radius/3,
+                0,
+                ball.position.x,
+                ball.position.y,
+                ball.radius
+            );
+            gradient.addColorStop(0, ball.color);
+            gradient.addColorStop(1, ball.adjustBrightness(ball.color, -30));
+            exportCtx.fillStyle = gradient;
+            exportCtx.beginPath();
+            exportCtx.arc(ball.position.x, ball.position.y, ball.radius, 0, 2 * Math.PI);
+            exportCtx.fill();
+            
+            exportCtx.fillStyle = ball.adjustBrightness(ball.color, 50);
+            exportCtx.beginPath();
+            exportCtx.arc(ball.position.x - ball.radius/4, ball.position.y - ball.radius/4, ball.radius/6, 0, 2 * Math.PI);
+            exportCtx.fill();
+        }
+        
+        exportCtx.fillStyle = 'rgba(255, 255, 255, 0.3)';
+        exportCtx.font = '16px Arial';
+        exportCtx.textAlign = 'right';
+        exportCtx.fillText('Made by Priyansh Vaish', WIDTH - 20, HEIGHT - 20);
+        
+        const link = document.createElement('a');
+        link.download = `physics_simulation_${Date.now()}.png`;
+        link.href = exportCanvas.toDataURL('image/png');
+        link.click();
+        console.log('High-resolution image exported successfully');
+    }
+}
+window.addEventListener('load', () => {
+    new Simulation();
+});
+</script>
+</body>
+</html>
